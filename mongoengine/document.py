@@ -1,4 +1,3 @@
-
 import pymongo
 import re
 
@@ -45,7 +44,6 @@ class InvalidCollectionError(Exception):
 
 
 class EmbeddedDocument(BaseDocument):
-
     """A :class:`~mongoengine.Document` that isn't stored in its own
     collection.  :class:`~mongoengine.EmbeddedDocument`\ s should be used as
     fields on :class:`~mongoengine.Document`\ s through the
@@ -88,7 +86,6 @@ class EmbeddedDocument(BaseDocument):
 
 
 class Document(BaseDocument):
-
     """The base class used for defining the structure and properties of
     collections of documents stored in MongoDB. Inherit from this class, and
     add fields as class attributes to define a document's structure.
@@ -155,7 +152,9 @@ class Document(BaseDocument):
 
         def fset(self, value):
             return setattr(self, self._meta['id_field'], value)
+
         return property(fget, fset)
+
     pk = pk()
 
     @classmethod
@@ -182,7 +181,7 @@ class Document(BaseDocument):
                     # options match the specified capped options
                     options = cls._collection.options()
                     if options.get('max') != max_documents or \
-                       options.get('size') != max_size:
+                                    options.get('size') != max_size:
                         msg = (('Cannot create collection "%s" as a capped '
                                 'collection as it already exists')
                                % cls._collection)
@@ -240,7 +239,7 @@ class Document(BaseDocument):
         return True
 
     def save(self, force_insert=False, validate=True, clean=True,
-             write_concern=None,  cascade=None, cascade_kwargs=None,
+             write_concern=None, cascade=None, cascade_kwargs=None,
              _refs=None, save_condition=None, **kwargs):
         """Save the :class:`~mongoengine.Document` to the database. If the
         document already exists, it will be updated, otherwise it will be
@@ -293,6 +292,12 @@ class Document(BaseDocument):
             write_concern = {"w": 1}
 
         doc = self.to_mongo()
+
+        # provide fallback for older mongo instances
+        try:
+            doc['_types'] = list(self._superclasses) + [self._class_name]
+        except:
+            doc['_types'] = [self._class_name]
 
         created = ('_id' not in doc or self._created or force_insert)
 
@@ -441,7 +446,7 @@ class Document(BaseDocument):
             if kwargs.get('upsert', False):
                 query = self.to_mongo()
                 if "_cls" in query:
-                    del(query["_cls"])
+                    del (query["_cls"])
                 return self._qs.filter(**query).update_one(**kwargs)
             else:
                 raise OperationError(
@@ -466,7 +471,7 @@ class Document(BaseDocument):
         # Delete FileFields separately 
         FileField = _import_class('FileField')
         for name, field in self._fields.iteritems():
-            if isinstance(field, FileField): 
+            if isinstance(field, FileField):
                 getattr(self, name).delete()
 
         try:
@@ -700,7 +705,7 @@ class Document(BaseDocument):
         # If _cls is being used (for polymorphism), it needs an index,
         # only if another index doesn't begin with _cls
         if (index_cls and not cls_indexed and
-                cls._meta.get('allow_inheritance', ALLOW_INHERITANCE) is True):
+                    cls._meta.get('allow_inheritance', ALLOW_INHERITANCE) is True):
 
             # we shouldn't pass 'cls' to the collection.ensureIndex options
             # because of https://jira.mongodb.org/browse/SERVER-769
@@ -730,16 +735,16 @@ class Document(BaseDocument):
 
             for base_cls in cls.__bases__:
                 if (isinstance(base_cls, TopLevelDocumentMetaclass) and
-                        base_cls != Document and
+                            base_cls != Document and
                         not base_cls._meta.get('abstract') and
-                        base_cls._get_collection().full_name == cls._get_collection().full_name and
-                        base_cls not in classes):
+                            base_cls._get_collection().full_name == cls._get_collection().full_name and
+                            base_cls not in classes):
                     classes.append(base_cls)
                     get_classes(base_cls)
             for subclass in cls.__subclasses__():
                 if (isinstance(base_cls, TopLevelDocumentMetaclass) and
-                        subclass._get_collection().full_name == cls._get_collection().full_name and
-                        subclass not in classes):
+                            subclass._get_collection().full_name == cls._get_collection().full_name and
+                            subclass not in classes):
                     classes.append(subclass)
                     get_classes(subclass)
 
@@ -767,7 +772,7 @@ class Document(BaseDocument):
         if [(u'_id', 1)] not in indexes:
             indexes.append([(u'_id', 1)])
         if (cls._meta.get('index_cls', True) and
-                cls._meta.get('allow_inheritance', ALLOW_INHERITANCE) is True):
+                    cls._meta.get('allow_inheritance', ALLOW_INHERITANCE) is True):
             indexes.append([(u'_cls', 1)])
 
         return indexes
@@ -798,7 +803,6 @@ class Document(BaseDocument):
 
 
 class DynamicDocument(Document):
-
     """A Dynamic Document class allowing flexible, expandable and uncontrolled
     schemas.  As a :class:`~mongoengine.Document` subclass, acts in the same
     way as an ordinary document but has expando style properties.  Any data
@@ -830,7 +834,6 @@ class DynamicDocument(Document):
 
 
 class DynamicEmbeddedDocument(EmbeddedDocument):
-
     """A Dynamic Embedded Document class allowing flexible, expandable and
     uncontrolled schemas. See :class:`~mongoengine.DynamicDocument` for more
     information about dynamic documents.
@@ -857,7 +860,6 @@ class DynamicEmbeddedDocument(EmbeddedDocument):
 
 
 class MapReduceDocument(object):
-
     """A document returned from a map/reduce query.
 
     :param collection: An instance of :class:`~pymongo.Collection`
