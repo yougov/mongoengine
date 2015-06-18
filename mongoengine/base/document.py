@@ -74,7 +74,8 @@ class BaseDocument(object):
         # if so raise an Exception.
         if not self._dynamic and (self._meta.get('strict', True) or _created):
             for var in values.keys():
-                if var not in self._fields.keys() + ['id', 'pk', '_cls', '_text_score']:
+                # add _types back for compatibility with older instances
+                if var not in self._fields.keys() + ['id', 'pk', '_cls', '_text_score', '_types']:
                     msg = (
                         "The field '{0}' does not exist on the document '{1}'"
                     ).format(var, self._class_name)
@@ -172,8 +173,8 @@ class BaseDocument(object):
             self__created = True
 
         if (self._is_document and not self__created and
-                name in self._meta.get('shard_key', tuple()) and
-                self._data.get(name) != value):
+                    name in self._meta.get('shard_key', tuple()) and
+                    self._data.get(name) != value):
             OperationError = _import_class('OperationError')
             msg = "Shard Keys are immutable. Tried to update %s" % name
             raise OperationError(msg)
@@ -184,7 +185,7 @@ class BaseDocument(object):
             self__initialised = False
         # Check if the user has created a new instance of a class
         if (self._is_document and self__initialised
-                and self__created and name == self._meta['id_field']):
+            and self__created and name == self._meta['id_field']):
             super(BaseDocument, self).__setattr__('_created', False)
 
         super(BaseDocument, self).__setattr__(name, value)
@@ -420,7 +421,7 @@ class BaseDocument(object):
         :param use_db_field: Set to True by default but enables the output of the json structure with the field names and not the mongodb store db_names in case of set to False
         """
         use_db_field = kwargs.pop('use_db_field', True)
-        return json_util.dumps(self.to_mongo(use_db_field),  *args, **kwargs)
+        return json_util.dumps(self.to_mongo(use_db_field), *args, **kwargs)
 
     @classmethod
     def from_json(cls, json_data, created=False):
@@ -570,11 +571,11 @@ class BaseDocument(object):
                 continue
             elif (isinstance(data, (EmbeddedDocument, DynamicEmbeddedDocument))
                   and db_field_name not in changed_fields):
-                 # Find all embedded fields that have been changed
+                # Find all embedded fields that have been changed
                 changed = data._get_changed_fields(inspected)
                 changed_fields += ["%s%s" % (key, k) for k in changed if k]
             elif (isinstance(data, (list, tuple, dict)) and
-                    db_field_name not in changed_fields):
+                          db_field_name not in changed_fields):
                 if (hasattr(field, 'field') and
                         isinstance(field.field, ReferenceField)):
                     continue
@@ -621,7 +622,7 @@ class BaseDocument(object):
         else:
             set_data = doc
             if '_id' in set_data:
-                del(set_data['_id'])
+                del (set_data['_id'])
 
         # Determine if any changed items were actually unset.
         for path, value in set_data.items():
@@ -631,8 +632,8 @@ class BaseDocument(object):
             # If we've set a value that ain't the default value dont unset it.
             default = None
             if (self._dynamic and len(parts) and parts[0] in
-                    self._dynamic_fields):
-                del(set_data[path])
+                self._dynamic_fields):
+                del (set_data[path])
                 unset_data[path] = 1
                 continue
             elif path in self._fields:
@@ -645,7 +646,7 @@ class BaseDocument(object):
                     if isinstance(d, list) and p.isdigit():
                         d = d[int(p)]
                     elif (hasattr(d, '__getattribute__') and
-                          not isinstance(d, dict)):
+                              not isinstance(d, dict)):
                         real_path = d._reverse_db_field_map.get(p, p)
                         d = getattr(d, real_path)
                     else:
@@ -666,7 +667,7 @@ class BaseDocument(object):
             if default != value:
                 continue
 
-            del(set_data[path])
+            del (set_data[path])
             unset_data[path] = 1
         return set_data, unset_data
 
@@ -782,7 +783,7 @@ class BaseDocument(object):
         allow_inheritance = cls._meta.get('allow_inheritance',
                                           ALLOW_INHERITANCE)
         include_cls = (allow_inheritance and not spec.get('sparse', False) and
-                       spec.get('cls',  True))
+                       spec.get('cls', True))
 
         # 733: don't include cls if index_cls is False unless there is an explicit cls with the index
         include_cls = include_cls and (spec.get('cls', False) or cls._meta.get('index_cls', True))
@@ -881,7 +882,7 @@ class BaseDocument(object):
 
             # Grab any embedded document field unique indexes
             if (field.__class__.__name__ == "EmbeddedDocumentField" and
-                    field.document_type != cls):
+                        field.document_type != cls):
                 field_namespace = "%s." % field_name
                 doc_cls = field.document_type
                 unique_indexes += doc_cls._unique_with_indexes(field_namespace)
@@ -915,7 +916,7 @@ class BaseDocument(object):
                 if parent_field:
                     field_name = "%s.%s" % (parent_field, field_name)
                 geo_indices.append({'fields':
-                                    [(field_name, field._geo_index)]})
+                                        [(field_name, field._geo_index)]})
         return geo_indices
 
     @classmethod
@@ -973,7 +974,7 @@ class BaseDocument(object):
                 if hasattr(getattr(field, 'field', None), 'lookup_member'):
                     new_field = field.field.lookup_member(field_name)
                 else:
-                   # Look up subfield on the previous field
+                    # Look up subfield on the previous field
                     new_field = field.lookup_member(field_name)
                 if not new_field and isinstance(field, ComplexBaseField):
                     if hasattr(field.field, 'document_type') and cls._dynamic \
